@@ -143,3 +143,8 @@ Back up the **entire SQLite file** while no ETL job is writing, preferably with 
 ## Project structure
 
 `backend/app/` REST API, scheduler, insights and configuration; `src/` validated ETL, SQLite warehouse, reports and PDF generation; `frontend/src/` eight React screens and the Poppins-pink theme; `tests/` isolated Python tests; `data/raw/` South African synthetic input; `data/seed/` deployable baseline; `data/legacy/` original preserved sample; `render.yaml` and `Dockerfile` deployment definition; `start.py` concurrent development launcher.
+
+
+# Verification code:
+WTC-G3SP4PVK
+
