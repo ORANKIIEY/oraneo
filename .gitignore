@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+.venv*/
+.env
+frontend/.env
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+*.tsbuildinfo
+.data/
+# Generated runtime files: keep the original source sample CSV under version control.
+data/warehouse.db
+data/uploads/
+data/reports/
+data/processed/sales_clean.tmp

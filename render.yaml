@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: oraneo
+    runtime: docker
+    plan: starter
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: ORANEO_AUTH_USER
+        value: oraneo
+      - key: ORANEO_AUTH_PASSWORD
+        sync: false
+      - key: ORANEO_SEED_ON_FIRST_BOOT
+        value: 'true'
+      - key: ORANEO_SCHEDULER_ENABLED
+        value: 'true'
+      - key: SALES_DB_PATH
+        value: /var/data/warehouse.db
+      - key: SALES_UPLOAD_DIR
+        value: /var/data/uploads
+      - key: SALES_REPORT_DIR
+        value: /var/data/reports
+      - key: SALES_PROCESSED_DIR
+        value: /var/data/processed
+      - key: SALES_CURRENCY
+        value: ZAR
+    disk:
+      name: oraneo-sqlite
+      mountPath: /var/data
+      sizeGB: 1

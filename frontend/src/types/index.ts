@@ -1,0 +1,17 @@
+export type Metric={name:string;revenue:number;units?:number;orders?:number;count?:number};
+export type KPI={total_orders:number;total_units:number;total_revenue:number;average_order_value:number;
+ raw_count:number;accepted_count:number;rejected_count:number;duplicate_count:number;success_rate:number;status:string;duration_seconds:number|null};
+export type Run={id:string;filename:string;status:'running'|'success'|'failed'|'interrupted';started_at:string;finished_at:string|null;
+ duration_seconds:number|null;raw_count:number;unique_count:number;accepted_count:number;rejected_count:number;duplicate_count:number;error:string|null;log:string};
+export type Reason={name:string;count:number};
+export type Quality={run_id:string|null;raw_count:number;unique_count:number;accepted_count:number;rejected_count:number;
+ duplicate_count:number;success_rate:number;rejection_rate:number;missing_values:Record<string,number>;reasons:Reason[];issues:Reason[]};
+export type Analysis={kpis:Pick<KPI,'total_orders'|'total_units'|'total_revenue'|'average_order_value'>;monthly:Metric[];cities:Metric[];
+ products:Metric[];customers:Metric[];currency:string};
+export type Dashboard={kpis:KPI;analytics:Analysis;quality:Quality;recent_runs:Run[];history_chart:{name:string;accepted:number;rejected:number;duplicates:number}[];currency:string;demo_data:boolean;data_source?:string};
+export type Sale={order_id:string;order_date:string;customer_id:string;city:string;product:string;quantity:number;unit_price:number;revenue:number;order_month:string};
+export type Pagination<T>={items:T[];total:number;page:number;page_size:number;filters?:{cities:string[];products:string[]}};
+export type Reject={source_row:number;order_id:string;disposition:string;original:Record<string,string>;reasons:string[]};
+export type Preview={upload_id:string;filename:string;raw_count:number;unique_count:number;accepted_count:number;rejected_count:number;duplicate_count:number;missing_values:Record<string,number>};
+export type RunDetails=Run&{missing_values:Record<string,number>;issue_frequency:Reason[];rejection_reasons:Reason[];duplicate_reasons:Reason[]};
+export type ReportPreview={kind:string;period:{start_date:string|null;end_date:string|null};currency:string;kpis:Analysis['kpis'];quality:Quality;recent_runs:Run[]};

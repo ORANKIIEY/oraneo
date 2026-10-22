@@ -1,0 +1,132 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
+/* ORANEO / studio pink. Editorial type, tight grid, no gradients, no logo,
+   no shadow cards and no rounded-corner visual language. */
+:root{--ink:#281d26;--nav:#261521;--pink:#d9367e;--pink-hover:#b92166;--pink-light:#fde7ef;--paper:#fbf8fa;--line:#ebdfe5;--muted:#806c7a;--positive:#2a6554;--negative:#a63b65;font-family:'Poppins',Arial,sans-serif!important;font-size:13px!important;color:var(--ink);background:var(--paper)}
+*,*::before,*::after{border-radius:0!important;box-shadow:none!important;background-image:none!important}
+body,button,input,select,textarea,code,kbd,table,th,td{font-family:'Poppins',Arial,sans-serif!important}
+body{background:var(--paper);color:var(--ink)}
+h1,h2,h3,strong,b{font-family:'Poppins',Arial,sans-serif!important;letter-spacing:-.025em}
+a,button{transition:background-color .13s,border-color .13s,color .13s}
+:focus-visible{outline:2px solid var(--pink)!important;outline-offset:2px!important}
+/* Navigation — deep plum with pink highlighting; all branding typographic. */
+.sidebar{background:var(--nav)!important;color:#d6bdcc!important;border-right:1px solid #4b3444;padding:29px 16px 18px!important}
+.brand{margin:0 12px 40px!important;align-items:flex-start!important}
+.wordmark strong{font-size:25px!important;letter-spacing:-.075em!important;line-height:1.1!important;color:#fff!important;font-weight:800!important}
+.wordmark span{font-family:'Poppins',sans-serif!important;letter-spacing:.19em!important;font-size:9px!important;color:#f6a4c6!important;display:block;margin-top:9px}
+.workspace-card{background:#352130!important;border:1px solid #593b4d!important;color:#fff!important;padding:16px!important;margin:0 2px 34px!important}
+.workspace-card-top{font-size:9px!important;letter-spacing:.11em!important;color:#eda8c6!important;margin-bottom:12px!important}
+.workspace-card strong{font-size:12px!important;color:#fff!important}
+.workspace-card>span{color:#ceb1c0!important;font-size:10px!important}
+.active-square,.live-square,.banner-indicator{background:var(--pink)!important}
+.nav-section-label{color:#a8899d!important;font-size:9px!important;letter-spacing:.15em!important;font-weight:600!important;margin-top:4px!important}
+.nav-link{color:#ddc8d5!important;background:transparent!important;border-left:2px solid transparent!important;padding:12px 13px!important;font-size:12px!important;font-weight:500!important}
+.nav-link svg{color:#c79bad!important}
+.nav-link:hover{background:#392334!important;color:#fff!important}
+.nav-link.active{background:#4a263b!important;border-left-color:#f17bb0!important;color:#fff!important}
+.nav-link.active svg{color:#ffa3cc!important}
+.nav-count{background:var(--pink)!important;color:white!important}
+.sidebar-search{background:#352130!important;border:1px solid #56364a!important;color:#f2d0e0!important}
+.sidebar-search kbd{background:#452b3b!important;color:#ffc3d9!important;border:1px solid #65415a!important}
+.sidebar-footer{background:#352130!important;border-color:#56364a!important;color:#f5d8e5!important}
+.sidebar-footer strong{color:#fff!important}
+.sidebar-footer span{color:#b899ab!important}
+/* Toolbar and content — wide whitespace, small dividers, flat surfaces. */
+.main-area{background:var(--paper)!important}
+.topbar{background:#fff!important;border-bottom:1px solid var(--line)!important;height:70px!important;padding-inline:34px!important;color:var(--muted)!important}
+.topbar-breadcrumb{color:#9b748b!important;font-weight:700!important;letter-spacing:.04em!important}
+.topbar-left b{color:var(--ink)!important}
+.environment-pill{color:#693750!important;background:#fff0f6!important;border:1px solid #f3cfdf!important;font-size:9px!important;letter-spacing:.07em!important;font-weight:700!important}
+.environment-pill span{background:var(--pink)!important}
+.top-icon-button,.help-link{background:#fff!important;border:1px solid var(--line)!important;color:#5c4052!important}
+.top-icon-button:hover,.help-link:hover{background:#fff0f6!important;border-color:#eec0d3!important;color:var(--pink)!important}
+.alert-bubble{background:var(--pink)!important;color:#fff!important}
+.page-content{padding:35px 36px 50px!important;max-width:1640px;width:100%;margin-inline:auto}
+.page-header{margin-bottom:25px!important}
+.eyebrow{font-family:'Poppins',sans-serif!important;font-size:10px!important;letter-spacing:.18em!important;color:var(--pink)!important;font-weight:700!important}
+.page-header h1{font-size:clamp(24px,2.5vw,35px)!important;color:var(--ink)!important;font-weight:700!important;line-height:1.2!important;letter-spacing:-.047em!important;margin:8px 0 7px!important}
+.page-header p{font-size:12px!important;line-height:1.8!important;color:var(--muted)!important;max-width:700px}
+.app-footer{background:#fff!important;border-top:1px solid var(--line)!important;color:#9a8390!important;font-size:10px!important}
+/* Buttons / form controls — intentionally squared off. */
+.btn,.small-action,button{font-weight:600!important}
+.btn{min-height:38px!important;padding:10px 15px!important;font-size:11px!important;gap:8px!important}
+.btn.primary,.btn-primary{background:var(--pink)!important;border:1px solid var(--pink)!important;color:white!important}
+.btn.primary:hover,.btn-primary:hover{background:var(--pink-hover)!important;border-color:var(--pink-hover)!important}
+.btn.secondary,.btn.ghost{background:white!important;border:1px solid #dcc6d2!important;color:#513345!important}
+.btn.secondary:hover,.btn.ghost:hover{background:#fff1f6!important;color:var(--pink)!important}
+input:not([type='checkbox']),select,textarea{background:#fff!important;border:1px solid #e2ced9!important;color:var(--ink)!important;min-height:40px}
+input::placeholder,textarea::placeholder{color:#a58d9c!important}
+input,select,textarea{accent-color:var(--pink)!important}
+input:focus,select:focus,textarea:focus{border-color:var(--pink)!important;outline-color:var(--pink)!important}
+label,.field-heading{color:#4e3948!important}
+.field-hint{color:#8b7582!important}
+/* Dense data cards: each card has a hairline, not a floating shadow. */
+.panel,.metric-card,.quick-links a{background:#fff!important;border:1px solid var(--line)!important}
+.metric-card{border-top:3px solid var(--pink)!important;padding:19px 20px!important}
+.metric-top{font-size:10px!important;color:#876d7d!important;font-weight:600!important}
+.metric-card strong{font-size:25px!important;font-weight:700!important;color:#2f1c2b!important}
+.metric-icon{background:var(--pink-light)!important;color:var(--pink)!important}
+.metric-foot{font-family:'Poppins',sans-serif!important;font-size:10px!important;color:#9d8191!important}
+.panel{padding:21px 22px!important;margin-bottom:16px!important}
+.panel-heading{border-bottom:1px solid var(--line)!important;padding-bottom:15px!important}
+.panel-heading h2{font-size:14px!important;font-weight:700!important;color:#362536!important}
+.panel-heading p{font-size:11px!important;color:#9d8593!important}
+.mini-label{background:#faedf3!important;color:#92506f!important;font-size:10px!important;border:1px solid #f4d5e3!important}
+.text-link,.row-link,.id-cell{color:var(--pink)!important}
+.text-link:hover{color:var(--pink-hover)!important}
+.demo-banner,.ops-note,.inline-note,.method-note{background:#fff0f6!important;border:1px solid #f1d2e0!important;color:#745263!important}
+.demo-banner strong,.ops-note strong,.inline-note strong{color:#5d304c!important}
+/* Tables with crisp blush header rows, no zebra gradients. */
+.table-scroll{border:1px solid var(--line)!important}
+table{font-size:11px!important}
+th{background:#fbf0f5!important;color:#715469!important;border-bottom:1px solid #efd8e3!important;text-transform:uppercase!important;font-weight:700!important;letter-spacing:.055em!important;font-family:'Poppins',sans-serif!important}
+td{border-bottom:1px solid #f1e6ec!important;color:#51404b!important;font-size:11px!important}
+tbody tr:hover{background:#fff6fa!important}
+.status{font-family:'Poppins',sans-serif!important;font-size:9px!important;font-weight:700!important}
+.status-success{background:#e6f3ec!important;color:#226443!important}
+.status-failed{background:#fae3ea!important;color:#a53860!important}
+.status-running{background:#eee7fb!important;color:#704baa!important}
+.status-interrupted{background:#fff1e2!important;color:#95632e!important}
+.quality-bar{background:#f3e6ed!important}
+.bar-accepted,.legend-dot.accepted{background:#4a2940!important}
+.bar-rejected,.legend-dot.rejected{background:var(--pink)!important}
+.bar-duplicate,.legend-dot.duplicate{background:#b99caf!important}
+.quick-links a{color:#513847!important}
+.quick-links a svg:first-child{color:var(--pink)!important}
+.quick-links a:hover{background:#fff2f7!important;border-color:#f2c5d8!important}
+/* Pipeline, reports, alert and insights sections. */
+.source-option,.report-option{background:#fff!important;border:1px solid var(--line)!important;color:#533c4b!important}
+.source-option.selected,.report-option.selected,.report-option:has(input:checked){border-color:var(--pink)!important;background:#fff5f9!important}
+.upload-area{background:#fff8fb!important;border:1px dashed #eeb7ce!important;color:#8c5a74!important}
+.preflight,.preview-detail,.pdf-preview,.schedule-summary,.run-stats,.run-summary-grid{border-color:var(--line)!important}
+.pdf-preview-top{background:#fff0f6!important}
+.preview-amount,.quality-total,.insight-value{color:var(--ink)!important}
+.exception-flag,.exception-flag.critical,.insight-icon,.signal-mark.warning{background:var(--pink-light)!important;color:var(--pink)!important}
+.clear-state{background:#f0faf4!important;border-color:#d9eddf!important;color:var(--positive)!important}
+.exception-item,.signal-row,.glossary-list>div{border-color:var(--line)!important}
+.exception-copy strong,.signal-row strong,.glossary-list strong{color:#392a36!important}
+.exception-copy p,.signal-row p,.glossary-list p{color:#877381!important}
+.intelligence-lead{background:#311c2c!important;border-color:#311c2c!important}
+.intelligence-lead .eyebrow{color:#f599be!important}
+.intelligence-lead p{color:#e0bfd1!important}
+.snapshot-stats{border-color:#6c425b!important}
+.snapshot-stats>div:first-child{border-color:#6c425b!important}
+.snapshot-stats span,.snapshot-stats small{color:#d6b4c7!important}
+.insight-comparison{border-color:var(--line)!important}
+.insight-comparison span{color:#a18493!important}
+.insight-comparison strong{color:#4b3142!important}
+.error-state{background:#fff1f5!important;border:1px solid #edbfd2!important;color:#912c59!important}
+.pagination,.table-actions{color:#7a6474!important}
+/* Command surface remains neutral, focused and keyboard accessible. */
+.palette-overlay{background:rgba(35,15,30,.72)!important}
+.command-dialog{background:#fff!important;border:1px solid #cba4b8!important}
+.command-field,.command-footer{border-color:var(--line)!important}
+.command-result{color:#5b3b50!important;background:white!important}
+.command-result:hover{background:#fff1f7!important}
+.command-result strong{color:#382137!important}
+.command-result small{color:#9d7f90!important}
+.toast{background:#321e2c!important;color:#fff!important;border:1px solid #70455c!important}
+/* Third-party SVG charts retain vector fills, but no gradient/chart corner styling. */
+.recharts-tooltip-wrapper *{border-radius:0!important}
+@media(max-width:1100px){.page-content{padding:25px!important}}
+@media(max-width:800px){.sidebar{width:263px!important}.topbar{padding:0 15px!important}.page-content{padding:20px 15px!important}.workspace-card{margin-bottom:22px!important}}
+@media(max-width:540px){.page-header h1{font-size:25px!important}.panel{padding:16px!important}.metric-card{padding:16px!important}.topbar{height:62px!important}}

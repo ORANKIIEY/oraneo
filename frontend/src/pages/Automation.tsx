@@ -1,0 +1,33 @@
+import {useCallback,useEffect,useState} from 'react';
+import {Link} from 'react-router-dom';
+import {AlertTriangle,ArrowRight,Check,Clock3,RefreshCw,Save,Settings2,Zap} from 'lucide-react';
+import {api,errorText} from '../api/client';
+import {ErrorState,Header,Panel,Spinner,time,useNotice} from '../components/UI';
+
+type Settings={enabled:boolean;interval_minutes:number;rejection_threshold:number;duplicate_threshold:number;next_run_at:string|null;last_triggered_at:string|null;updated_at:string;schedule_scope:string};
+type Alert={id:number;category:string;severity:string;title:string;detail:string;run_id:string|null;created_at:string;acknowledged_at:string|null};
+type Response={settings:Settings;alerts:{items:Alert[];unread:number};worker_active?:boolean};
+const intervals=[{value:15,label:'Every 15 minutes'},{value:60,label:'Every hour'},{value:360,label:'Every 6 hours'},{value:1440,label:'Every 24 hours'}];
+export default function Automation(){
+ const [data,setData]=useState<Response|null>(null);const [draft,setDraft]=useState<Settings|null>(null);
+ const [loading,setLoading]=useState(true);const [saving,setSaving]=useState(false);const [busyId,setBusyId]=useState<number|null>(null);
+ const [error,setError]=useState('');const {notify}=useNotice();
+ const reload=useCallback(async()=>{try{setError('');const {data:result}=await api.get<Response>('/automation');setData(result);setDraft(result.settings)}catch(e){setError(errorText(e))}finally{setLoading(false)}},[]);
+ useEffect(()=>{void reload()},[reload]);
+ async function save(){if(!draft)return;setSaving(true);try{
+  const {data:updated}=await api.put<Settings>('/automation',{enabled:draft.enabled,interval_minutes:draft.interval_minutes,rejection_threshold:draft.rejection_threshold,duplicate_threshold:draft.duplicate_threshold});
+  setDraft(updated);setData(old=>old?{...old,settings:updated}:old);notify('Automation settings saved');
+ }catch(e){notify(errorText(e),'error')}finally{setSaving(false)}}
+ async function acknowledge(id:number){setBusyId(id);try{await api.post(`/alerts/${id}/acknowledge`);await reload();notify('Alert acknowledged')}catch(e){notify(errorText(e),'error')}finally{setBusyId(null)}}
+ return <><Header eyebrow="CONTROL / 07" title="Automation & alerts" description="Set a recurring data load, enforce quality thresholds, and review exceptions in one place." actions={<button className="btn secondary" onClick={()=>void reload()}><RefreshCw size={15}/> Refresh</button>}/>
+ <div className="ops-note"><Zap size={17}/><span><strong>Local scheduler.</strong> Rules are stored in SQLite. Scheduled runs execute only while the ORANEO API is running, against the default raw CSV. After downtime, a missed interval runs at most once. Manual runs remain available.</span></div>
+ {data?.worker_active===false&&<div className="ops-note"><AlertTriangle size={17}/> The local scheduler is disabled by server configuration (ORANEO_SCHEDULER_ENABLED=false). Scheduling will not execute until it is enabled and FastAPI restarts.</div>}
+ {loading?<Spinner/>:error?<ErrorState message={error} onRetry={()=>void reload()}/>:draft&&data&&<>
+ <div className="two-columns automation-columns"><Panel title="Recurring pipeline" subtitle="Run the validated source file automatically"><div className="form-line between"><div><strong className="field-heading">Scheduled execution</strong><p className="field-hint">Enable or pause without deleting the schedule</p></div><label className="check-toggle"><input type="checkbox" checked={draft.enabled} onChange={e=>setDraft({...draft,enabled:e.target.checked})}/><span>{draft.enabled?'Enabled':'Paused'}</span></label></div>
+ <div className="field-stack"><label htmlFor="cadence">Execution frequency</label><select id="cadence" value={draft.interval_minutes} onChange={e=>setDraft({...draft,interval_minutes:Number(e.target.value)})}>{intervals.map(i=><option key={i.value} value={i.value}>{i.label}</option>)}</select></div>
+ <div className="schedule-summary"><div><Clock3 size={16}/><span>Next scheduled run</span><strong>{draft.enabled?(draft.next_run_at && draft.next_run_at===data.settings.next_run_at && draft.interval_minutes===data.settings.interval_minutes?time(draft.next_run_at):'After saving'):'Paused'}</strong></div><div><RefreshCw size={16}/><span>Previous trigger</span><strong>{time(data.settings.last_triggered_at)}</strong></div></div>
+ <button className="btn primary" disabled={saving} onClick={()=>void save()}><Save size={16}/>{saving?'Saving…':'Save automation rules'}</button></Panel>
+ <Panel title="Quality guardrails" subtitle="Raise an in-app alert when the latest run breaks a rule"><div className="field-stack"><label htmlFor="reject-limit">Rejected rows threshold (%)</label><input id="reject-limit" type="number" min="0" max="100" step="0.5" value={draft.rejection_threshold} onChange={e=>setDraft({...draft,rejection_threshold:Number(e.target.value)})}/><span className="field-hint">Alert when rejected rows exceed this percentage of raw input rows.</span></div><div className="field-stack"><label htmlFor="duplicate-limit">Duplicate rows threshold (%)</label><input id="duplicate-limit" type="number" min="0" max="100" step="0.5" value={draft.duplicate_threshold} onChange={e=>setDraft({...draft,duplicate_threshold:Number(e.target.value)})}/><span className="field-hint">Duplicates are audited separately and are not counted as rejected rows.</span></div><div className="inline-note"><Settings2 size={16}/> Rule changes apply to future completed runs. Previous alerts remain auditable.</div><Link to="/quality" className="text-link">Inspect data quality <ArrowRight size={15}/></Link></Panel></div>
+ <Panel title="Exception inbox" subtitle={`${data.alerts.unread} unacknowledged alerts · persisted across restarts`} actions={<Link to="/history" className="text-link">Run history <ArrowRight size={15}/></Link>}>
+ {!data.alerts.items.length?<div className="clear-state"><Check size={19}/><div><strong>No open exceptions</strong><p>Pipeline failures and threshold violations appear here after each run.</p></div></div>:<div className="exception-list">{data.alerts.items.map(a=><div key={a.id} className="exception-item"><div className={'exception-flag '+a.severity}><AlertTriangle size={18}/></div><div className="exception-copy"><div className="exception-meta">{a.category.replaceAll('_',' ')} · {time(a.created_at)}</div><strong>{a.title}</strong><p>{a.detail}</p>{a.run_id&&<Link className="text-link" to={'/history?run='+a.run_id}>Inspect run <ArrowRight size={14}/></Link>}</div><button className="btn secondary" disabled={busyId===a.id} onClick={()=>void acknowledge(a.id)}><Check size={15}/> Acknowledge</button></div>)}</div>}
+ </Panel></>}</>}
