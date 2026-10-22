@@ -1,6 +1,7 @@
+from decimal import Decimal
 import pandas as pd
 import pytest
-from src.validation import validate,read_csv,REQUIRED_COLUMNS
+from src.validation import validate,read_csv,REQUIRED_COLUMNS,parse_amount
 from src.generate_data import generate,CITIES,PRODUCTS
 
 
@@ -70,3 +71,48 @@ def test_empty_and_malformed_file(tmp_path):
     with pytest.raises(ValueError,match='no data rows'):read_csv(str(p))
     p.write_text(','.join(REQUIRED_COLUMNS)+'\n"unterminated,1,2,3,4,5,6\n')
     with pytest.raises(ValueError,match='Invalid CSV'):read_csv(str(p))
+
+def test_parse_amount_loopholes():
+    assert parse_amount("1e3") is None
+    assert parse_amount("1_000") is None
+    assert parse_amount(" 5 ") == Decimal("5")
+    assert parse_amount(" 5 ", whole=True) == Decimal("5")
+    assert parse_amount("-3") is None
+    assert parse_amount("0") is None
+    assert parse_amount("12.345") is None
+    assert parse_amount("NaN") is None
+    assert parse_amount("١٢") is None
+
+def test_validation_loopholes_rejected_in_validate():
+    for bad_val in ["1e3", "1_000", "-3", "0", "12.345"]:
+        res_qty = validate(pd.DataFrame([valid_row(quantity=bad_val)]))
+        assert len(res_qty.clean) == 0
+        assert "Invalid quantity" in res_qty.rejected.iloc[0]["reasons_json"]
+
+        res_price = validate(pd.DataFrame([valid_row(unit_price=bad_val)]))
+        assert len(res_price.clean) == 0
+        assert "Invalid unit price" in res_price.rejected.iloc[0]["reasons_json"]
+
+    # NaN is rejected as missing value by clean_text and validation
+    res_nan_qty = validate(pd.DataFrame([valid_row(quantity="NaN")]))
+    assert len(res_nan_qty.clean) == 0
+    assert "Missing quantity" in res_nan_qty.rejected.iloc[0]["reasons_json"]
+
+    res_nan_price = validate(pd.DataFrame([valid_row(unit_price="NaN")]))
+    assert len(res_nan_price.clean) == 0
+    assert "Missing unit_price" in res_nan_price.rejected.iloc[0]["reasons_json"]
+
+    res_valid_qty = validate(pd.DataFrame([valid_row(quantity=" 5 ")]))
+    assert len(res_valid_qty.clean) == 1
+    assert res_valid_qty.clean.iloc[0]["quantity"] == 5
+
+    res_valid_price = validate(pd.DataFrame([valid_row(unit_price=" 5 ")]))
+    assert len(res_valid_price.clean) == 1
+    assert res_valid_price.clean.iloc[0]["unit_price"] == 5.0
+
+def test_revenue_quantize_avoids_float_drift():
+    # 7 * 0.70 in standard float is 4.8999999999999995; quantize gives 4.90
+    result = validate(pd.DataFrame([valid_row(quantity="7", unit_price="0.70")]))
+    assert len(result.clean) == 1
+    assert result.clean.iloc[0]["revenue"] == 4.90
+

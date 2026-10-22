@@ -68,9 +68,15 @@ def parse_date(value: str) -> str | None:
     return None
 
 
+NUMBER_RE = re.compile(r"\d+(\.\d{1,2})?")   # ASCII digits, max 2 decimals
+
+
 def parse_amount(value: str, positive: bool = True, whole: bool = False) -> Decimal | None:
     try:
         if not value: return None
+        value = str(value).strip()
+        if not value or not value.isascii() or not NUMBER_RE.fullmatch(value):
+            return None
         d = Decimal(value)
         if not d.is_finite() or (positive and d <= 0) or abs(d) > MAX_MONEY: return None
         if whole and d != d.to_integral_value(): return None
@@ -111,7 +117,7 @@ def validate(df: pd.DataFrame) -> Result:
                       "product": " ".join(data["product"].split()).title(),
                       "quantity": int(quantity) if quantity is not None else None,
                       "unit_price": float(price) if price is not None else None,
-                      "revenue": float(quantity * price) if quantity is not None and price is not None else None,
+                      "revenue": float((quantity * price).quantize(Decimal("0.01"))) if quantity is not None and price is not None else None,
                       "order_month": date[:7] if date else None}
         evaluated.append({"source_row": pos, "raw": original, "data": normalized, "reasons": reasons, "valid": valid})
         for reason in reasons: all_issues.append({"source_row": pos, "reason": reason, "column_name": reason.split(" ")[-1]})
