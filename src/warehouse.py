@@ -24,7 +24,8 @@ CREATE TABLE IF NOT EXISTS pipeline_runs (
  raw_count INTEGER NOT NULL DEFAULT 0, unique_count INTEGER NOT NULL DEFAULT 0,
  duplicate_count INTEGER NOT NULL DEFAULT 0, accepted_count INTEGER NOT NULL DEFAULT 0,
  rejected_count INTEGER NOT NULL DEFAULT 0, duration_seconds REAL,
- error TEXT, log TEXT NOT NULL DEFAULT '', missing_json TEXT NOT NULL DEFAULT '{}'
+ error TEXT, log TEXT NOT NULL DEFAULT '', missing_json TEXT NOT NULL DEFAULT '{}',
+ export_status TEXT, processed_dir TEXT, export_error TEXT
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_only_one_running ON pipeline_runs(status) WHERE status='running';
 CREATE TABLE IF NOT EXISTS rejected_sales (
@@ -77,8 +78,22 @@ def initialize(db_path: str, recover: bool = False):
         conn.executescript(SCHEMA)
         if not any(col['name']=='input_ref' for col in conn.execute('PRAGMA table_info(pipeline_runs)')):
             conn.execute('ALTER TABLE pipeline_runs ADD COLUMN input_ref TEXT')
+        if not any(col['name']=='export_status' for col in conn.execute('PRAGMA table_info(pipeline_runs)')):
+            conn.execute("ALTER TABLE pipeline_runs ADD COLUMN export_status TEXT")
+        if not any(col['name']=='processed_dir' for col in conn.execute('PRAGMA table_info(pipeline_runs)')):
+            conn.execute("ALTER TABLE pipeline_runs ADD COLUMN processed_dir TEXT")
+        if not any(col['name']=='export_error' for col in conn.execute('PRAGMA table_info(pipeline_runs)')):
+            conn.execute("ALTER TABLE pipeline_runs ADD COLUMN export_error TEXT")
         if recover:
             conn.execute("UPDATE pipeline_runs SET status='interrupted',finished_at=?,error='Process interrupted before completion' WHERE status='running'", (now(),))
+            try:
+                try:
+                    from .etl import retry_failed_exports
+                except ImportError:
+                    from etl import retry_failed_exports
+                retry_failed_exports(db_path)
+            except Exception:
+                pass
 
 
 def new_run(db_path: str, filename: str, input_ref: str | None = None) -> str:
@@ -99,7 +114,119 @@ def finish_failed(db_path: str, run_id: str, error: str):
                      (now(), error[:500], max(duration,0), start['log']+'\nERROR: '+error[:500],run_id))
 
 
-def commit_run(db_path: str, run_id: str, result) -> None:
+def update_export_status(db_path: str, run_id: str, status: str, error: str | None = None, processed_dir: str | None = None) -> None:
+    """Track whether an export is pending, complete, or failed for a given run."""
+    with connect(db_path) as conn:
+        row = conn.execute('SELECT log, processed_dir FROM pipeline_runs WHERE id=?', (run_id,)).fetchone()
+        if not row: return
+        target_dir = str(processed_dir) if processed_dir else row['processed_dir']
+        log_entry = f"\n[{now()}] CSV export {status}"
+        if error:
+            log_entry += f": {error[:300]}"
+        conn.execute(
+            '''UPDATE pipeline_runs SET export_status=?, export_error=?, processed_dir=?, log=log||? WHERE id=?''',
+            (status, error[:500] if error else None, target_dir, log_entry, run_id)
+        )
+
+
+def get_export_status(db_path: str, run_id: str | None = None) -> dict:
+    """Inspect the export disposition of the warehouse or a specific pipeline run."""
+    with connect(db_path) as conn:
+        cols = {col['name'] for col in conn.execute('PRAGMA table_info(pipeline_runs)')}
+        has_col = 'export_status' in cols
+        if run_id:
+            row = conn.execute('SELECT id, status, export_status, export_error, processed_dir FROM pipeline_runs WHERE id=?', (run_id,)).fetchone()
+            if not row:
+                return {'run_id': run_id, 'found': False}
+            return {
+                'run_id': row['id'],
+                'run_status': row['status'],
+                'export_status': row['export_status'] if has_col else 'unknown',
+                'export_error': row['export_error'] if 'export_error' in cols else None,
+                'processed_dir': row['processed_dir'] if 'processed_dir' in cols else None,
+                'found': True
+            }
+        else:
+            latest = conn.execute("SELECT id, status, export_status, export_error, processed_dir FROM pipeline_runs WHERE status='success' ORDER BY finished_at DESC, id DESC LIMIT 1").fetchone()
+            pending = conn.execute("SELECT COUNT(*) FROM pipeline_runs WHERE status='success' AND export_status='pending'").fetchone()[0] if has_col else 0
+            failed = conn.execute("SELECT COUNT(*) FROM pipeline_runs WHERE status='success' AND export_status='failed'").fetchone()[0] if has_col else 0
+            return {
+                'latest_run_id': latest['id'] if latest else None,
+                'latest_export_status': latest['export_status'] if (latest and has_col) else None,
+                'pending_exports': pending,
+                'failed_exports': failed,
+            }
+
+
+def diagnostics(db_path: str, processed_dir: str | Path | None = None, retry_failed: bool = True) -> dict:
+    """Readiness and export diagnostics for the warehouse.
+
+    Reports database readiness, sales count, run statuses, and export health.
+    If retry_failed is True and there are pending/failed exports, attempts to retry them.
+    """
+    retried = []
+    if retry_failed:
+        try:
+            try:
+                from .etl import retry_failed_exports
+            except ImportError:
+                from etl import retry_failed_exports
+            retried = retry_failed_exports(db_path, default_processed_dir=processed_dir)
+        except Exception:
+            pass
+
+    required = ['fact_sales', 'pipeline_runs', 'rejected_sales', 'duplicate_audit']
+    with connect(db_path) as c:
+        tables = {r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+        missing = [table for table in required if table not in tables]
+        orders = c.execute('SELECT COUNT(*) FROM fact_sales').fetchone()[0] if not missing else 0
+        latest = c.execute('SELECT * FROM pipeline_runs ORDER BY started_at DESC, id DESC LIMIT 1').fetchone() if not missing else None
+
+        cols = {col['name'] for col in c.execute('PRAGMA table_info(pipeline_runs)')} if 'pipeline_runs' in tables else set()
+        has_export_status = 'export_status' in cols
+
+        pending_count = 0
+        failed_count = 0
+        latest_export = None
+        if has_export_status and not missing:
+            pending_count = c.execute("SELECT COUNT(*) FROM pipeline_runs WHERE status='success' AND export_status='pending'").fetchone()[0]
+            failed_count = c.execute("SELECT COUNT(*) FROM pipeline_runs WHERE status='success' AND export_status='failed'").fetchone()[0]
+            latest_succ = c.execute("SELECT export_status FROM pipeline_runs WHERE status='success' ORDER BY finished_at DESC, id DESC LIMIT 1").fetchone()
+            if latest_succ:
+                latest_export = latest_succ['export_status']
+
+    target_dir = Path(processed_dir) if processed_dir else (Path(db_path).parent / 'processed')
+    csv_file = target_dir / 'sales_clean.csv'
+    csv_exists = csv_file.is_file()
+
+    if latest_export:
+        overall_status = latest_export
+    elif csv_exists and not failed_count and not pending_count:
+        overall_status = 'complete'
+    elif failed_count:
+        overall_status = 'failed'
+    elif pending_count:
+        overall_status = 'pending'
+    else:
+        overall_status = 'none'
+
+    return {
+        'ready': not missing,
+        'warehouse_exists': Path(db_path).is_file(),
+        'sales_rows': orders,
+        'latest_run_status': latest['status'] if latest else None,
+        'latest_run_id': latest['id'] if latest else None,
+        'latest_export_status': latest_export,
+        'export_status': overall_status,
+        'pending_exports': pending_count,
+        'failed_exports': failed_count,
+        'export_file_exists': csv_exists,
+        'retried_exports': retried,
+        'missing_tables': missing,
+    }
+
+
+def commit_run(db_path: str, run_id: str, result, processed_dir: str | None = None) -> None:
     """Single atomic transaction: facts, audit, and success flag. Replace latest snapshot."""
     with connect(db_path) as conn:
         try:
@@ -123,10 +250,12 @@ def commit_run(db_path: str, run_id: str, result) -> None:
             if not row: raise ValueError('Run metadata missing')
             duration = (datetime.fromisoformat(now())-datetime.fromisoformat(row['started_at'])).total_seconds()
             conn.execute('''UPDATE pipeline_runs SET status='success',finished_at=?,raw_count=?,unique_count=?,
-                duplicate_count=?,accepted_count=?,rejected_count=?,duration_seconds=?,missing_json=?,log=? WHERE id=?''',
+                duplicate_count=?,accepted_count=?,rejected_count=?,duration_seconds=?,missing_json=?,
+                export_status='pending',processed_dir=?,log=? WHERE id=?''',
                 (now(),result.input_count,result.input_count-len(result.duplicates),len(result.duplicates),
                  len(result.clean),len(result.rejected),max(duration,0),json.dumps(result.missing),
-                 row['log']+f'\n[{now()}] Committed {len(result.clean)} accepted, {len(result.rejected)} rejected, {len(result.duplicates)} duplicate rows',run_id))
+                 str(processed_dir) if processed_dir else None,
+                 row['log']+f'\n[{now()}] Committed {len(result.clean)} accepted, {len(result.rejected)} rejected, {len(result.duplicates)} duplicate rows. CSV export pending.',run_id))
             conn.execute('COMMIT')
         except BaseException:
             conn.execute('ROLLBACK')
