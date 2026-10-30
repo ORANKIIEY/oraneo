@@ -147,4 +147,3 @@ Back up the **entire SQLite file** while no ETL job is writing, preferably with 
 
 # Verification code:
 WTC-G3SP4PVK
-
